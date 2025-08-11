@@ -114,7 +114,7 @@
       </div>
 
       <p class="note" style="margin-top:8px">
-        Opomba: Uporabljamo samo **seštevanje** in **odštevanje**. Vsako število največ 1×. Cilj &le; 100 in ni enak nobenemu od 6 števil.
+        Opomba: Uporabljamo samo <strong>seštevanje</strong> in <strong>odštevanje</strong>. Vsako število največ 1×. Vmesni rezultati morajo ostati <strong>pozitivni</strong> (&ge; 1). Cilj &le; 100 in ni enak nobenemu od 6 števil.
       </p>
     </section>
 
@@ -150,42 +150,62 @@ function sample6Unique() {
   return out;
 }
 
+// >>> POPRAVEK: vmesni rezultati morajo ostati pozitivni (≥ 1)
 function buildExpressionFromSubset(nums) {
   // izbere 2–6 števil, jih premeša in mednje vtakne + ali −
-  const k = 2 + Math.floor(Math.random()*5); // 2..6
-  const indices = [...nums].map((_,i)=>i);
+  const k = 2 + Math.floor(Math.random() * 5); // 2..6
+  const indices = [...nums].map((_, i) => i);
+
   // naključno vzorčenje k elementov
-  for (let i=indices.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [indices[i],indices[j]] = [indices[j],indices[i]];
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
   }
-  const chosen = indices.slice(0,k).map(i=>nums[i]);
+  const chosen = indices.slice(0, k).map(i => nums[i]);
 
   // premešaj vrstni red izbranih
-  for (let i=chosen.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [chosen[i],chosen[j]] = [chosen[j],chosen[i]];
+  for (let i = chosen.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chosen[i], chosen[j]] = [chosen[j], chosen[i]];
   }
 
   let total = chosen[0];
+  if (total < 1) return { expr: null, total: null, used: null };
+
   const parts = [String(chosen[0])];
-  for (let i=1;i<chosen.length;i++){
+
+  for (let i = 1; i < chosen.length; i++) {
     const op = Math.random() < 0.5 ? '+' : '-';
     const val = chosen[i];
-    if (op === '+') total += val; else total -= val;
+
+    if (op === '+') {
+      total += val;
+    } else {
+      // zavrni, če bi vmesni rezultat postal 0 ali negativen
+      if (total - val < 1) {
+        return { expr: null, total: null, used: null };
+      }
+      total -= val;
+    }
+
     parts.push(op, String(val));
   }
+
   const expr = parts.join(' ');
-  return {expr, total, used: chosen};
+  return { expr, total, used: chosen };
 }
 
-function generateOneValidPuzzle(maxTries=600) {
-  for (let t=0;t<maxTries;t++){
+function generateOneValidPuzzle(maxTries = 800) {
+  for (let t = 0; t < maxTries; t++) {
     const nums = sample6Unique();
-    for (let inner=0; inner<120; inner++){
-      const {expr,total} = buildExpressionFromSubset(nums);
-      if (total >= 1 && total <= 100 && !nums.includes(total)) {
-        return {numbers: nums, target: total, expression: expr};
+    for (let inner = 0; inner < 200; inner++) {
+      const { expr, total } = buildExpressionFromSubset(nums);
+      if (
+        expr &&                 // mora biti veljaven (brez negativnih vmesnih)
+        total >= 1 && total <= 100 &&
+        !nums.includes(total)   // cilj ne sme biti eno od 6 števil
+      ) {
+        return { numbers: nums, target: total, expression: expr };
       }
     }
   }
@@ -227,7 +247,7 @@ function makePuzzleCanvas(numbers, target, cfg) {
   const font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
   ctx.font = font;
   ctx.fillStyle = '#000000';
-  ctx.textBaseline = 'alphabetic'; // kontroliramo sami z baselineAdjust
+  ctx.textBaseline = 'alphabetic';
 
   // 6 belih celic
   let x = cfg.MARGIN_PX;
@@ -375,8 +395,7 @@ btnGen.addEventListener('click', async ()=>{
       resultsEl.appendChild(wrap);
 
       log(`[${made}/${n}] ✓ ${numbers.join(', ')} → ${target}  (${expression})`);
-      // majhen odmor, da UI ostane odziven
-      await new Promise(r=>setTimeout(r));
+      await new Promise(r=>setTimeout(r)); // UI ostane odziven
     } catch(e){
       // redko, a lahko — poskusi znova
     }
