@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Countdown Numbers (+/−, 4. razred)</title>
+  <style>
+    :root{
+      --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#0f172a;
+      --accent:#e2e8f0; --btn:#0f172a; --btn-ink:#ffffff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--ink); background:var(--bg);
+    }
+    header{
+      padding:20px; text-align:center; background:linear-gradient(180deg,#fff,transparent);
+    }
+    h1{margin:0 0 6px;font-size:clamp(20px,3vw,28px)}
+    p.lead{margin:0;color:var(--muted)}
+    main{max-width:1000px;margin:24px auto;padding:0 16px 64px}
+    .card{
+      background:var(--card); border:1px solid #e5e7eb; border-radius:16px; padding:16px;
+      box-shadow:0 1px 2px rgba(0,0,0,0.04);
+    }
+    .row{display:grid; gap:12px}
+    @media (min-width:900px){ .row{grid-template-columns:1.2fr 1fr} }
+    .controls{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+    @media (min-width:720px){ .controls{grid-template-columns:repeat(3,minmax(0,1fr));} }
+    label{
+      display:flex; flex-direction:column; gap:6px; border:1px solid #e5e7eb; border-radius:12px; padding:10px;
+      background:#fff;
+    }
+    label span.small{color:var(--muted); font-size:12px; line-height:1.2}
+    input[type="number"]{
+      width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:10px; font-size:14px;
+      background:#fff; color:var(--ink);
+    }
+    .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    button{
+      appearance:none; border:none; border-radius:999px; padding:10px 16px; font-weight:600; cursor:pointer;
+      background:var(--btn); color:var(--btn-ink);
+    }
+    button.secondary{background:#fff; color:var(--ink); border:1px solid #cbd5e1}
+    .log{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; white-space:pre-wrap; background:#0b1220; color:#d1e7ff; border-radius:12px; padding:12px; min-height:90px}
+    .grid{display:grid; gap:12px}
+    @media (min-width:720px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+    .tile{border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff}
+    .tile h3{margin:0 0 8px; font-size:14px; color:var(--muted)}
+    .thumbs{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .thumbs canvas{border:1px solid #e5e7eb; border-radius:10px; background:#fff; max-width:100%}
+    .thumbs a{font-size:12px}
+    footer{max-width:1000px;margin:24px auto 60px;padding:0 16px;color:var(--muted);text-align:center}
+    .note{font-size:12px; color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Countdown Numbers (samo + in −)</h1>
+    <p class="lead">Za 4. razred • cilj ≤ 100 • 6 števil • rešitve & prenos PNG</p>
+  </header>
+
+  <main class="row">
+    <section class="card">
+      <h2 style="margin:0 0 10px;font-size:18px">Nastavitve videza (PNG)</h2>
+      <div class="controls">
+        <label>
+          <strong>Širina celice</strong>
+          <input id="CELL_W" type="number" value="110" min="60" />
+          <span class="small">Širina bele celice s številko (primer 100).</span>
+        </label>
+        <label>
+          <strong>Višina celice</strong>
+          <input id="CELL_H" type="number" value="70" min="40" />
+          <span class="small">Višina bele celice s številko.</span>
+        </label>
+        <label>
+          <strong>Rob (margin)</strong>
+          <input id="MARGIN_PX" type="number" value="10" min="0" />
+          <span class="small">Odmik vsebine od roba slike (zgoraj/levo/desno/spodaj).</span>
+        </label>
+        <label>
+          <strong>Razmik med celicami</strong>
+          <input id="GAP_X" type="number" value="8" min="0" />
+          <span class="small">Vodoravni razmik med sosednjimi celicami.</span>
+        </label>
+        <label>
+          <strong>Ciljna širina ×</strong>
+          <input id="TARGET_W_MULT" type="number" value="1.5" step="0.1" min="1.0" />
+          <span class="small">Ciljna (siva) celica je 1.5× širša od navadnih.</span>
+        </label>
+        <label>
+          <strong>Debelina obrobe</strong>
+          <input id="STROKE_WIDTH" type="number" value="2" min="1" />
+          <span class="small">Črna linija okrog celic.</span>
+        </label>
+        <label>
+          <strong>Velikost pisave (pt)</strong>
+          <input id="FONT_SIZE" type="number" value="16" min="10" />
+          <span class="small">Besedilo v celicah (Arial Black, če je na voljo).</span>
+        </label>
+        <label>
+          <strong>Navpična poravnava</strong>
+          <input id="TEXT_BASELINE_ADJ" type="number" value="-2" step="1" />
+          <span class="small">Fini premik besedila navzgor (–) ali navzdol (+).</span>
+        </label>
+      </div>
+
+      <div class="actions">
+        <input id="count" type="number" min="1" value="6" style="width:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px" />
+        <button id="generate">Ustvari naloge</button>
+        <button id="clear" class="secondary">Počisti rezultate</button>
+      </div>
+
+      <p class="note" style="margin-top:8px">
+        Opomba: Uporabljamo samo **seštevanje** in **odštevanje**. Vsako število največ 1×. Cilj &le; 100 in ni enak nobenemu od 6 števil.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2 style="margin:0 0 10px;font-size:18px">Dnevnik / sporočila</h2>
+      <div id="log" class="log">Pripravljeno. Nastavi količino in klikni »Ustvari naloge«.</div>
+    </section>
+  </main>
+
+  <main>
+    <section class="card">
+      <h2 style="margin:0 0 10px;font-size:18px">Ustvarjene naloge</h2>
+      <div id="results" class="grid"></div>
+    </section>
+    <footer>
+      <p class="note">Pisava: brskalnik bo poskusil uporabiti “Arial Black”; če je ni, uporabi podobno pisavo.</p>
+    </footer>
+  </main>
+
+<script>
+/* ========= Logika igre (JS, brskalnik) ========= */
+
+const ALLOWED = [1,2,3,4,5,6,7,8,9,10,25,50,75,100];
+
+function sample6Unique() {
+  // naključno vzame 6 brez ponavljanja
+  const pool = [...ALLOWED];
+  const out = [];
+  for (let i=0;i<6;i++){
+    const k = Math.floor(Math.random()*pool.length);
+    out.push(pool.splice(k,1)[0]);
+  }
+  return out;
+}
+
+function buildExpressionFromSubset(nums) {
+  // izbere 2–6 števil, jih premeša in mednje vtakne + ali −
+  const k = 2 + Math.floor(Math.random()*5); // 2..6
+  const indices = [...nums].map((_,i)=>i);
+  // naključno vzorčenje k elementov
+  for (let i=indices.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [indices[i],indices[j]] = [indices[j],indices[i]];
+  }
+  const chosen = indices.slice(0,k).map(i=>nums[i]);
+
+  // premešaj vrstni red izbranih
+  for (let i=chosen.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [chosen[i],chosen[j]] = [chosen[j],chosen[i]];
+  }
+
+  let total = chosen[0];
+  const parts = [String(chosen[0])];
+  for (let i=1;i<chosen.length;i++){
+    const op = Math.random() < 0.5 ? '+' : '-';
+    const val = chosen[i];
+    if (op === '+') total += val; else total -= val;
+    parts.push(op, String(val));
+  }
+  const expr = parts.join(' ');
+  return {expr, total, used: chosen};
+}
+
+function generateOneValidPuzzle(maxTries=600) {
+  for (let t=0;t<maxTries;t++){
+    const nums = sample6Unique();
+    for (let inner=0; inner<120; inner++){
+      const {expr,total} = buildExpressionFromSubset(nums);
+      if (total >= 1 && total <= 100 && !nums.includes(total)) {
+        return {numbers: nums, target: total, expression: expr};
+      }
+    }
+  }
+  throw new Error("Ne morem ustvariti veljavnega primera. Poskusi znova.");
+}
+
+/* ========= Risanje v PNG (canvas) ========= */
+
+function getSettings() {
+  const val = id => parseFloat(document.getElementById(id).value);
+  return {
+    CELL_W: val('CELL_W'),
+    CELL_H: val('CELL_H'),
+    MARGIN_PX: val('MARGIN_PX'),
+    GAP_X: val('GAP_X'),
+    TARGET_W_MULT: val('TARGET_W_MULT'),
+    STROKE_WIDTH: val('STROKE_WIDTH'),
+    FONT_SIZE: val('FONT_SIZE'),
+    TEXT_BASELINE_ADJ: val('TEXT_BASELINE_ADJ'),
+  };
+}
+
+function makePuzzleCanvas(numbers, target, cfg) {
+  const Wtarget = Math.round(cfg.CELL_W * cfg.TARGET_W_MULT);
+  const width = cfg.MARGIN_PX*2 + cfg.CELL_W*6 + cfg.GAP_X*6 + Wtarget;
+  const height = cfg.MARGIN_PX*2 + cfg.CELL_H;
+
+  const c = document.createElement('canvas');
+  c.width = width; c.height = height;
+  const ctx = c.getContext('2d');
+
+  // ozadje
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,width,height);
+
+  ctx.lineWidth = cfg.STROKE_WIDTH;
+  ctx.strokeStyle = '#000000';
+
+  const font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
+  ctx.font = font;
+  ctx.fillStyle = '#000000';
+  ctx.textBaseline = 'alphabetic'; // kontroliramo sami z baselineAdjust
+
+  // 6 belih celic
+  let x = cfg.MARGIN_PX;
+  const y = cfg.MARGIN_PX;
+  for (const n of numbers) {
+    // okvir
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x, y, cfg.CELL_W, cfg.CELL_H);
+    ctx.strokeRect(x, y, cfg.CELL_W, cfg.CELL_H);
+    // besedilo na sredino
+    const txt = String(n);
+    const tw = ctx.measureText(txt).width;
+    const tx = x + Math.floor((cfg.CELL_W - tw)/2);
+    const th = cfg.FONT_SIZE; // približek višine
+    const ty = y + Math.floor((cfg.CELL_H + th)/2) + cfg.TEXT_BASELINE_ADJ;
+    ctx.fillStyle = '#000000';
+    ctx.fillText(txt, tx, ty);
+    x += cfg.CELL_W + cfg.GAP_X;
+  }
+
+  // ciljna (siva) celica 1.5×
+  ctx.fillStyle = '#e6e6e6';
+  ctx.fillRect(x, y, Wtarget, cfg.CELL_H);
+  ctx.strokeStyle = '#000000';
+  ctx.strokeRect(x, y, Wtarget, cfg.CELL_H);
+
+  const tgtTxt = String(target);
+  const ttw = ctx.measureText(tgtTxt).width;
+  const ttx = x + Math.floor((Wtarget - ttw)/2);
+  const tth = cfg.FONT_SIZE;
+  const tty = y + Math.floor((cfg.CELL_H + tth)/2) + cfg.TEXT_BASELINE_ADJ;
+  ctx.fillStyle = '#000000';
+  ctx.fillText(tgtTxt, ttx, tty);
+
+  return c;
+}
+
+function makeSolutionCanvas(expression, target, cfg) {
+  const text = `${expression} = ${target}`;
+  // začasni canvas za mero
+  const tmp = document.createElement('canvas');
+  const tctx = tmp.getContext('2d');
+  tctx.font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
+  const textW = Math.ceil(tctx.measureText(text).width);
+
+  const minW = cfg.MARGIN_PX*2 + cfg.CELL_W*6 + cfg.GAP_X*5;
+  const width = Math.max(minW, textW + cfg.MARGIN_PX*2);
+  const height = cfg.MARGIN_PX*2 + cfg.CELL_H;
+
+  const c = document.createElement('canvas');
+  c.width = width; c.height = height;
+  const ctx = c.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,width,height);
+
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(Math.floor(cfg.MARGIN_PX/2), Math.floor(cfg.MARGIN_PX/2),
+                 width - cfg.MARGIN_PX, height - cfg.MARGIN_PX);
+
+  ctx.font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
+  ctx.fillStyle = '#000000';
+
+  const tw = ctx.measureText(text).width;
+  const tx = Math.floor((width - tw)/2);
+  const th = cfg.FONT_SIZE;
+  const ty = cfg.MARGIN_PX + Math.floor((cfg.CELL_H + th)/2) + cfg.TEXT_BASELINE_ADJ;
+  ctx.fillText(text, tx, ty);
+
+  return c;
+}
+
+/* ========= UI / generiranje ========= */
+
+const resultsEl = document.getElementById('results');
+const logEl = document.getElementById('log');
+const btnGen = document.getElementById('generate');
+const btnClear = document.getElementById('clear');
+
+function log(line){
+  logEl.textContent += (logEl.textContent.trim()? '\n':'') + line;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+btnClear.addEventListener('click', ()=>{
+  resultsEl.innerHTML = '';
+  logEl.textContent = 'Počiščeno. Pripravljeno za novo generiranje.';
+});
+
+btnGen.addEventListener('click', async ()=>{
+  const n = Math.max(1, parseInt(document.getElementById('count').value||'1',10));
+  const cfg = getSettings();
+  resultsEl.innerHTML = '';
+  logEl.textContent = 'Začenjam generiranje…';
+
+  let made = 0; let tries = 0;
+  const widthDigits = String(n).length;
+
+  while (made < n) {
+    tries++;
+    try{
+      const {numbers, target, expression} = generateOneValidPuzzle();
+      made++;
+      const idxStr = String(made).padStart(widthDigits,'0');
+
+      const puzzleCanvas = makePuzzleCanvas(numbers, target, cfg);
+      const solutionCanvas = makeSolutionCanvas(expression, target, cfg);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'tile';
+
+      const h = document.createElement('h3');
+      h.textContent = `Naloga ${idxStr}`;
+      wrap.appendChild(h);
+
+      const thumbs = document.createElement('div');
+      thumbs.className = 'thumbs';
+
+      // puzzle canvas + download
+      const pLink = document.createElement('a');
+      pLink.textContent = `⬇︎ puzzle_${idxStr}.png`;
+      pLink.href = puzzleCanvas.toDataURL('image/png');
+      pLink.download = `puzzle_${idxStr}.png`;
+      thumbs.appendChild(puzzleCanvas);
+      thumbs.appendChild(pLink);
+
+      // solution canvas + download
+      const sLink = document.createElement('a');
+      sLink.textContent = `⬇︎ solution_${idxStr}.png`;
+      sLink.href = solutionCanvas.toDataURL('image/png');
+      sLink.download = `solution_${idxStr}.png`;
+      thumbs.appendChild(solutionCanvas);
+      thumbs.appendChild(sLink);
+
+      wrap.appendChild(thumbs);
+
+      // dodatne info vrstice
+      const meta = document.createElement('div');
+      meta.className = 'note';
+      meta.style.marginTop = '6px';
+      meta.textContent = `Številke: [${numbers.join(', ')}]  |  Cilj: ${target}  |  Izraz: ${expression}`;
+      wrap.appendChild(meta);
+
+      resultsEl.appendChild(wrap);
+
+      log(`[${made}/${n}] ✓ ${numbers.join(', ')} → ${target}  (${expression})`);
+      // majhen odmor, da UI ostane odziven
+      await new Promise(r=>setTimeout(r));
+    } catch(e){
+      // redko, a lahko — poskusi znova
+    }
+  }
+
+  log(`\nKončano! Ustvarjenih ${made} nalog z rešitvami.`);
+});
+</script>
+</body>
+</html>
