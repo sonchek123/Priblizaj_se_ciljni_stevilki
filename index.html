@@ -6,133 +6,181 @@
   <title>Countdown Numbers (+/−, 4. razred)</title>
   <style>
     :root{
-      --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#0f172a;
-      --accent:#e2e8f0; --btn:#0f172a; --btn-ink:#ffffff;
+      --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      color:var(--ink); background:var(--bg);
-    }
-    header{
-      padding:20px; text-align:center; background:linear-gradient(180deg,#fff,transparent);
-    }
-    h1{margin:0 0 6px;font-size:clamp(20px,3vw,28px)}
-    p.lead{margin:0;color:var(--muted)}
-    main{max-width:1000px;margin:24px auto;padding:0 16px 64px}
-    .card{
-      background:var(--card); border:1px solid #e5e7eb; border-radius:16px; padding:16px;
-      box-shadow:0 1px 2px rgba(0,0,0,0.04);
-    }
-    .row{display:grid; gap:12px}
-    @media (min-width:900px){ .row{grid-template-columns:1.2fr 1fr} }
-    .controls{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
-    @media (min-width:720px){ .controls{grid-template-columns:repeat(3,minmax(0,1fr));} }
-    label{
-      display:flex; flex-direction:column; gap:6px; border:1px solid #e5e7eb; border-radius:12px; padding:10px;
-      background:#fff;
-    }
-    label span.small{color:var(--muted); font-size:12px; line-height:1.2}
-    input[type="number"]{
-      width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:10px; font-size:14px;
-      background:#fff; color:var(--ink);
-    }
-    .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
-    button{
-      appearance:none; border:none; border-radius:999px; padding:10px 16px; font-weight:600; cursor:pointer;
-      background:var(--btn); color:var(--btn-ink);
-    }
-    button.secondary{background:#fff; color:var(--ink); border:1px solid #cbd5e1}
-    .log{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; white-space:pre-wrap; background:#0b1220; color:#d1e7ff; border-radius:12px; padding:12px; min-height:90px}
-    .grid{display:grid; gap:12px}
-    @media (min-width:720px){ .grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
-    .tile{border:1px solid #e5e7eb; border-radius:12px; padding:12px; background:#fff}
-    .tile h3{margin:0 0 8px; font-size:14px; color:var(--muted)}
-    .thumbs{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-    .thumbs canvas{border:1px solid #e5e7eb; border-radius:10px; background:#fff; max-width:100%}
-    .thumbs a{font-size:12px}
-    footer{max-width:1000px;margin:24px auto 60px;padding:0 16px;color:var(--muted);text-align:center}
-    .note{font-size:12px; color:var(--muted)}
+    body{margin:0;font-family:system-ui;background:var(--bg);color:var(--ink);}
+    header{text-align:center;padding:20px;}
+    main{max-width:1000px;margin:0 auto;padding:0 16px 60px}
+    .card{background:#fff;padding:16px;border-radius:12px;margin-bottom:16px;}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    button{padding:10px 16px;border:none;border-radius:999px;font-weight:600;cursor:pointer}
+    button.primary{background:#0f172a;color:#fff}
+    button.secondary{background:#fff;color:#0f172a;border:1px solid #ccc}
+    .log{background:#0b1220;color:#d1e7ff;padding:12px;border-radius:12px;min-height:90px;white-space:pre-wrap}
+    .grid{display:grid;gap:12px}
+    @media (min-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
+    .tile{background:#fff;border:1px solid #ccc;padding:12px;border-radius:12px}
+    .thumbs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    canvas{border:1px solid #ccc;border-radius:8px;background:#fff}
   </style>
+  <!-- Knjižnici za ZIP prenos -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Countdown Numbers (samo + in −)</h1>
-    <p class="lead">Za 4. razred • cilj ≤ 100 • 6 števil • rešitve & prenos PNG</p>
-  </header>
+<header>
+  <h1>Countdown Numbers (samo + in −)</h1>
+  <p>Za 4. razred • cilj ≤ 100 • brez negativnih vmesnih rezultatov</p>
+</header>
 
-  <main class="row">
-    <section class="card">
-      <h2 style="margin:0 0 10px;font-size:18px">Nastavitve videza (PNG)</h2>
-      <div class="controls">
-        <!-- ohranjene nastavitve -->
-      </div>
+<main>
+  <section class="card">
+    <div class="actions">
+      <input id="count" type="number" min="1" value="20" style="padding:8px;width:120px" />
+      <button id="generate" class="primary">Ustvari naloge</button>
+      <button id="clear" class="secondary">Počisti</button>
+      <button id="downloadAll" class="secondary">Prenesi vse PNG</button>
+    </div>
+  </section>
 
-      <div class="actions">
-        <!-- privzeto nastavljeno na 20 nalog -->
-        <input id="count" type="number" min="1" value="20" 
-               style="width:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px" />
-        <button id="generate">Ustvari naloge</button>
-        <button id="clear" class="secondary">Počisti rezultate</button>
-      </div>
-    </section>
+  <section class="card">
+    <div id="log" class="log">Pripravljeno.</div>
+  </section>
 
-    <section class="card">
-      <h2 style="margin:0 0 10px;font-size:18px">Dnevnik / sporočila</h2>
-      <div id="log" class="log">Pripravljeno. Nastavi količino in klikni »Ustvari naloge«.</div>
-    </section>
-  </main>
-
-  <main>
-    <section class="card">
-      <h2 style="margin:0 0 10px;font-size:18px">Ustvarjene naloge</h2>
-      <div id="results" class="grid"></div>
-    </section>
-  </main>
+  <section class="card">
+    <h2>Ustvarjene naloge</h2>
+    <div id="results" class="grid"></div>
+  </section>
+</main>
 
 <script>
-/* ========= Logika igre ========= */
-// tu ostane vsa tvoja obstoječa logika buildExpressionFromSubset,
-// generateOneValidPuzzle, makePuzzleCanvas, makeSolutionCanvas itd.
-// (brez sprememb, ker ta del že deluje pravilno)
-</script>
+const ALLOWED = [1,2,3,4,5,6,7,8,9,10,25,50,75,100];
 
-<script>
-const resultsEl = document.getElementById('results');
-const logEl = document.getElementById('log');
-const btnGen = document.getElementById('generate');
-const btnClear = document.getElementById('clear');
-
-function log(line){
-  logEl.textContent += (logEl.textContent.trim()? '\n':'') + line;
-  logEl.scrollTop = logEl.scrollHeight;
+function sample6Unique(){
+  const pool=[...ALLOWED],out=[];
+  for(let i=0;i<6;i++){out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);}
+  return out;
 }
 
-btnClear.addEventListener('click', ()=>{
-  resultsEl.innerHTML = '';
-  logEl.textContent = 'Počiščeno. Pripravljeno za novo generiranje.';
-});
-
-btnGen.addEventListener('click', async ()=>{
-  const n = Math.max(1, parseInt(document.getElementById('count').value||'1',10));
-  resultsEl.innerHTML = '';
-  logEl.textContent = 'Začenjam generiranje…';
-  let made = 0;
-  while (made < n) {
-    try{
-      const {numbers, target, expression} = generateOneValidPuzzle();
-      made++;
-      // dodaj v DOM...
-    } catch(e){}
+function buildExpressionFromSubset(nums){
+  const k=2+Math.floor(Math.random()*5);
+  const chosen=[...nums].sort(()=>Math.random()-0.5).slice(0,k);
+  let total=chosen[0];
+  const parts=[String(chosen[0])];
+  for(let i=1;i<chosen.length;i++){
+    const op=Math.random()<0.5?'+':'-';
+    const val=chosen[i];
+    if(op==='+'|| total-val>=1){
+      total = op==='+'? total+val : total-val;
+      parts.push(op,String(val));
+    } else {return {expr:null,total:null}}
   }
-  log(`\nKončano! Ustvarjenih ${made} nalog z rešitvami.`);
-});
+  return {expr:parts.join(' '),total};
+}
 
-// AVTO GENERIRANJE ob nalaganju strani
-window.addEventListener('load', () => {
-  document.getElementById('count').value = 20; 
-  btnGen.click(); 
+function generateOneValidPuzzle(){
+  for(let t=0;t<500;t++){
+    const nums=sample6Unique();
+    for(let i=0;i<200;i++){
+      const {expr,total}=buildExpressionFromSubset(nums);
+      if(expr && total>=1 && total<=100 && !nums.includes(total)){
+        return {numbers:nums,target:total,expression:expr};
+      }
+    }
+  }
+  throw new Error("Ni mogoče ustvariti.");
+}
+
+function makePuzzleCanvas(numbers,target){
+  const cellW=60,cellH=50,margin=5,gap=5,tW=90;
+  const c=document.createElement('canvas');
+  c.width=margin*2+cellW*6+gap*6+tW;
+  c.height=margin*2+cellH;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+  ctx.font='bold 16px Arial';ctx.textBaseline='middle';ctx.textAlign='center';
+  let x=margin,y=margin;
+  for(const n of numbers){
+    ctx.strokeRect(x,y,cellW,cellH);
+    ctx.fillStyle='#000';ctx.fillText(n,x+cellW/2,y+cellH/2);
+    x+=cellW+gap;
+  }
+  ctx.fillStyle='#e6e6e6';
+  ctx.fillRect(x,y,tW,cellH);
+  ctx.strokeRect(x,y,tW,cellH);
+  ctx.fillStyle='#000';ctx.fillText(target,x+tW/2,y+cellH/2);
+  return c;
+}
+
+function makeSolutionCanvas(expr,target){
+  const text=`${expr} = ${target}`;
+  const c=document.createElement('canvas');
+  c.width=300;c.height=50;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeRect(0,0,c.width,c.height);
+  ctx.font='bold 16px Arial';ctx.textBaseline='middle';ctx.textAlign='center';
+  ctx.fillStyle='#000';ctx.fillText(text,c.width/2,c.height/2);
+  return c;
+}
+
+const resultsEl=document.getElementById('results');
+const logEl=document.getElementById('log');
+const btnGen=document.getElementById('generate');
+const btnClear=document.getElementById('clear');
+const btnAll=document.getElementById('downloadAll');
+
+function log(line){
+  logEl.textContent+=(logEl.textContent.trim()?'\n':'')+line;
+}
+
+btnClear.onclick=()=>{
+  resultsEl.innerHTML='';logEl.textContent='Počiščeno.';
+};
+
+btnGen.onclick=async()=>{
+  const n=parseInt(document.getElementById('count').value)||1;
+  resultsEl.innerHTML='';logEl.textContent='Generiram…';
+  for(let i=1;i<=n;i++){
+    try{
+      const {numbers,target,expression}=generateOneValidPuzzle();
+      const puzzle=makePuzzleCanvas(numbers,target);
+      const sol=makeSolutionCanvas(expression,target);
+      const tile=document.createElement('div');tile.className='tile';
+      const thumbs=document.createElement('div');thumbs.className='thumbs';
+      thumbs.appendChild(puzzle);
+      thumbs.appendChild(sol);
+      tile.appendChild(thumbs);
+      resultsEl.appendChild(tile);
+      log(`[${i}/${n}] ${numbers.join(', ')} → ${target} (${expression})`);
+    }catch(e){}
+    await new Promise(r=>setTimeout(r));
+  }
+  log('Končano.');
+};
+
+// ZIP prenos vseh slik
+btnAll.onclick=()=>{
+  const zip=new JSZip();
+  const tiles=resultsEl.querySelectorAll('.tile');
+  let idx=1;
+  tiles.forEach(tile=>{
+    const canvases=tile.querySelectorAll('canvas');
+    if(canvases[0]) zip.file(`puzzle_${idx}.png`,canvases[0].toDataURL('image/png').split(',')[1],{base64:true});
+    if(canvases[1]) zip.file(`solution_${idx}.png`,canvases[1].toDataURL('image/png').split(',')[1],{base64:true});
+    idx++;
+  });
+  zip.generateAsync({type:'blob'}).then(content=>{
+    saveAs(content,'naloge_countdown.zip');
+  });
+};
+
+// Avtomatsko generiranje ob nalaganju
+window.addEventListener('load',()=>{
+  document.getElementById('count').value=20;
+  btnGen.click();
 });
 </script>
 </body>
 </html>
+
