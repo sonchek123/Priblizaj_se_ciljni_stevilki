@@ -105,7 +105,7 @@
 
     <section class="card">
       <h2 style="margin:0 0 10px;font-size:18px">Dnevnik / sporočila</h2>
-      <div id="log" class="log">Pripravljeno. Klikni »Ustvari naloge« (privzeto 20).</div>
+      <div id="log" class="log">Pripravljeno. Avtomatsko ustvarjam 20 nalog…</div>
     </section>
   </main>
 
@@ -119,8 +119,7 @@
     </footer>
   </main>
 
-  <!-- Majhen MODULE skript, ki le izpostavi ZIP funkcijo kot globalno.
-       Če CDN ni dosegljiv, aplikacija vseeno deluje (brez ZIP gumba). -->
+  <!-- Module: ZIP knjižnica (če odpove, app še vedno deluje) -->
   <script type="module">
     try {
       const { downloadZip } = await import('https://cdn.jsdelivr.net/npm/client-zip/index.js');
@@ -131,7 +130,7 @@
     }
   </script>
 
-  <!-- Glavni (klasičen) skript aplikacije -->
+  <!-- Glavni skript -->
   <script>
   const ALLOWED = [1,2,3,4,5,6,7,8,9,10,25,50,75,100];
 
@@ -149,15 +148,11 @@
   function buildExpressionFromSubset(nums) {
     const k = 2 + Math.floor(Math.random() * 5); // 2..6
     const indices = nums.map((_, i) => i);
-
-    // naključno vzorčenje k indeksov
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
     const chosen = indices.slice(0, k).map(i => nums[i]);
-
-    // premešaj vrstni red izbranih
     for (let i = chosen.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [chosen[i], chosen[j]] = [chosen[j], chosen[i]];
@@ -165,13 +160,11 @@
 
     let total = chosen[0];
     if (total < 1) return { expr: null, total: null };
-
     const parts = [String(chosen[0])];
 
     for (let i = 1; i < chosen.length; i++) {
       const op = Math.random() < 0.5 ? '+' : '-';
       const val = chosen[i];
-
       if (op === '+') {
         total += val;
       } else {
@@ -180,7 +173,6 @@
       }
       parts.push(op, String(val));
     }
-
     return { expr: parts.join(' '), total };
   }
 
@@ -395,4 +387,30 @@
 
     btnZipAll.disabled = !window.__downloadZip || allFiles.length === 0;
     if (!window.__downloadZip) {
-      log('Opomba: ZIP knjižnice ni; ZIP gumb ost
+      log('Opomba: ZIP knjižnice ni; ZIP gumb ostane onemogočen.');
+    }
+    log(`\nKončano! Ustvarjenih ${made} nalog z rešitvami.`);
+  });
+
+  btnZipAll.addEventListener('click', async ()=>{
+    if (!allFiles.length || !window.__downloadZip) return;
+    const blob = await window.__downloadZip(allFiles).blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    a.download = `countdown_images_${ts}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // >>> Avtomatsko generiranje ob nalaganju strani:
+  window.addEventListener('DOMContentLoaded', () => {
+    // (po želji tu lahko nastaviš drugačno začetno število)
+    document.getElementById('generate').click();
+  });
+  </script>
+</body>
+</html>
