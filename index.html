@@ -6,42 +6,25 @@
   <title>Countdown Numbers (+/−, 4. razred)</title>
   <style>
     :root{
-      --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#0f172a;
+      --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569;
       --accent:#e2e8f0; --btn:#0f172a; --btn-ink:#ffffff;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      color:var(--ink); background:var(--bg);
-    }
-    header{
-      padding:20px; text-align:center; background:linear-gradient(180deg,#fff,transparent);
-    }
+    body{margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg);}
+    header{padding:20px; text-align:center; background:linear-gradient(180deg,#fff,transparent);}
     h1{margin:0 0 6px;font-size:clamp(20px,3vw,28px)}
     p.lead{margin:0;color:var(--muted)}
     main{max-width:1000px;margin:24px auto;padding:0 16px 64px}
-    .card{
-      background:var(--card); border:1px solid #e5e7eb; border-radius:16px; padding:16px;
-      box-shadow:0 1px 2px rgba(0,0,0,0.04);
-    }
+    .card{background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,0.04);}
     .row{display:grid; gap:12px}
     @media (min-width:900px){ .row{grid-template-columns:1.2fr 1fr} }
     .controls{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
     @media (min-width:720px){ .controls{grid-template-columns:repeat(3,minmax(0,1fr));} }
-    label{
-      display:flex; flex-direction:column; gap:6px; border:1px solid #e5e7eb; border-radius:12px; padding:10px;
-      background:#fff;
-    }
+    label{display:flex; flex-direction:column; gap:6px; border:1px solid #e5e7eb; border-radius:12px; padding:10px; background:#fff;}
     label span.small{color:var(--muted); font-size:12px; line-height:1.2}
-    input[type="number"]{
-      width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:10px; font-size:14px;
-      background:#fff; color:var(--ink);
-    }
+    input[type="number"]{width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:10px; font-size:14px; background:#fff; color:var(--ink);}
     .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
-    button{
-      appearance:none; border:none; border-radius:999px; padding:10px 16px; font-weight:600; cursor:pointer;
-      background:var(--btn); color:var(--btn-ink);
-    }
+    button{appearance:none; border:none; border-radius:999px; padding:10px 16px; font-weight:600; cursor:pointer; background:var(--btn); color:var(--btn-ink);}
     button.secondary{background:#fff; color:var(--ink); border:1px solid #cbd5e1}
     .log{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:13px; white-space:pre-wrap; background:#0b1220; color:#d1e7ff; border-radius:12px; padding:12px; min-height:90px}
     .grid{display:grid; gap:12px}
@@ -115,7 +98,8 @@
       </div>
 
       <p class="note" style="margin-top:8px">
-        Opomba: Uporabljamo samo <strong>seštevanje</strong> in <strong>odštevanje</strong>. Vsako število največ 1×. Vmesni rezultati morajo ostati <strong>pozitivni</strong> (&ge; 1). Cilj &le; 100 in ni enak nobenemu od 6 števil.
+        Uporabljamo samo <strong>seštevanje</strong> in <strong>odštevanje</strong>. Vsako število največ 1×.
+        Vmesni rezultati morajo ostati <strong>pozitivni</strong> (&ge; 1). Cilj &le; 100 in ni enak nobenemu od 6 števil.
       </p>
     </section>
 
@@ -135,179 +119,280 @@
     </footer>
   </main>
 
-<!-- Uporabimo majhno knjižnico za ZIP v brskalniku -->
-<script type="module">
-import { downloadZip } from 'https://cdn.jsdelivr.net/npm/client-zip/index.js';
-
-/* ========= Logika igre ========= */
-
-const ALLOWED = [1,2,3,4,5,6,7,8,9,10,25,50,75,100];
-
-function sample6Unique() {
-  const pool = [...ALLOWED];
-  const out = [];
-  for (let i=0;i<6;i++){
-    const k = Math.floor(Math.random()*pool.length);
-    out.push(pool.splice(k,1)[0]);
-  }
-  return out;
-}
-
-// vmesni rezultati morajo ostati pozitivni (≥ 1)
-function buildExpressionFromSubset(nums) {
-  const k = 2 + Math.floor(Math.random() * 5); // 2..6
-  const indices = [...nums].map((_, i) => i);
-
-  // naključno vzorčenje k elementov
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  const chosen = indices.slice(0, k).map(i => nums[i]);
-
-  // premešaj vrstni red izbranih
-  for (let i = chosen.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [chosen[i], chosen[j]] = [chosen[j], chosen[i]];
-  }
-
-  let total = chosen[0];
-  if (total < 1) return { expr: null, total: null, used: null };
-
-  const parts = [String(chosen[0])];
-
-  for (let i = 1; i < chosen.length; i++) {
-    const op = Math.random() < 0.5 ? '+' : '-';
-    const val = chosen[i];
-
-    if (op === '+') {
-      total += val;
-    } else {
-      if (total - val < 1) {
-        return { expr: null, total: null, used: null };
-      }
-      total -= val;
+  <!-- Majhen MODULE skript, ki le izpostavi ZIP funkcijo kot globalno.
+       Če CDN ni dosegljiv, aplikacija vseeno deluje (brez ZIP gumba). -->
+  <script type="module">
+    try {
+      const { downloadZip } = await import('https://cdn.jsdelivr.net/npm/client-zip/index.js');
+      window.__downloadZip = downloadZip;
+    } catch (e) {
+      console.warn('ZIP knjižnice ni bilo mogoče naložiti. Gumb ZIP bo onemogočen.', e);
+      window.__downloadZip = null;
     }
-    parts.push(op, String(val));
+  </script>
+
+  <!-- Glavni (klasičen) skript aplikacije -->
+  <script>
+  const ALLOWED = [1,2,3,4,5,6,7,8,9,10,25,50,75,100];
+
+  function sample6Unique() {
+    const pool = [...ALLOWED];
+    const out = [];
+    for (let i=0;i<6;i++){
+      const k = Math.floor(Math.random()*pool.length);
+      out.push(pool.splice(k,1)[0]);
+    }
+    return out;
   }
 
-  const expr = parts.join(' ');
-  return { expr, total, used: chosen };
-}
+  // vmesni rezultati morajo ostati pozitivni (≥ 1)
+  function buildExpressionFromSubset(nums) {
+    const k = 2 + Math.floor(Math.random() * 5); // 2..6
+    const indices = nums.map((_, i) => i);
 
-function generateOneValidPuzzle(maxTries = 800) {
-  for (let t = 0; t < maxTries; t++) {
-    const nums = sample6Unique();
-    for (let inner = 0; inner < 200; inner++) {
-      const { expr, total } = buildExpressionFromSubset(nums);
-      if (
-        expr &&
-        total >= 1 && total <= 100 &&
-        !nums.includes(total)
-      ) {
-        return { numbers: nums, target: total, expression: expr };
+    // naključno vzorčenje k indeksov
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const chosen = indices.slice(0, k).map(i => nums[i]);
+
+    // premešaj vrstni red izbranih
+    for (let i = chosen.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [chosen[i], chosen[j]] = [chosen[j], chosen[i]];
+    }
+
+    let total = chosen[0];
+    if (total < 1) return { expr: null, total: null };
+
+    const parts = [String(chosen[0])];
+
+    for (let i = 1; i < chosen.length; i++) {
+      const op = Math.random() < 0.5 ? '+' : '-';
+      const val = chosen[i];
+
+      if (op === '+') {
+        total += val;
+      } else {
+        if (total - val < 1) return { expr: null, total: null };
+        total -= val;
+      }
+      parts.push(op, String(val));
+    }
+
+    return { expr: parts.join(' '), total };
+  }
+
+  function generateOneValidPuzzle(maxTries = 800) {
+    for (let t = 0; t < maxTries; t++) {
+      const nums = sample6Unique();
+      for (let inner = 0; inner < 200; inner++) {
+        const { expr, total } = buildExpressionFromSubset(nums);
+        if (expr && total >= 1 && total <= 100 && !nums.includes(total)) {
+          return { numbers: nums, target: total, expression: expr };
+        }
       }
     }
+    throw new Error("Ne morem ustvariti veljavnega primera. Poskusi znova.");
   }
-  throw new Error("Ne morem ustvariti veljavnega primera. Poskusi znova.");
-}
 
-/* ========= Risanje v PNG (canvas) ========= */
+  function getSettings() {
+    const val = id => parseFloat(document.getElementById(id).value);
+    return {
+      CELL_W: val('CELL_W'),
+      CELL_H: val('CELL_H'),
+      MARGIN_PX: val('MARGIN_PX'),
+      GAP_X: val('GAP_X'),
+      TARGET_W_MULT: val('TARGET_W_MULT'),
+      STROKE_WIDTH: val('STROKE_WIDTH'),
+      FONT_SIZE: val('FONT_SIZE'),
+      TEXT_BASELINE_ADJ: val('TEXT_BASELINE_ADJ'),
+    };
+  }
 
-function getSettings() {
-  const val = id => parseFloat(document.getElementById(id).value);
-  return {
-    CELL_W: val('CELL_W'),
-    CELL_H: val('CELL_H'),
-    MARGIN_PX: val('MARGIN_PX'),
-    GAP_X: val('GAP_X'),
-    TARGET_W_MULT: val('TARGET_W_MULT'),
-    STROKE_WIDTH: val('STROKE_WIDTH'),
-    FONT_SIZE: val('FONT_SIZE'),
-    TEXT_BASELINE_ADJ: val('TEXT_BASELINE_ADJ'),
-  };
-}
+  function makePuzzleCanvas(numbers, target, cfg) {
+    const Wtarget = Math.round(cfg.CELL_W * cfg.TARGET_W_MULT);
+    const width = cfg.MARGIN_PX*2 + cfg.CELL_W*6 + cfg.GAP_X*6 + Wtarget;
+    const height = cfg.MARGIN_PX*2 + cfg.CELL_H;
 
-function makePuzzleCanvas(numbers, target, cfg) {
-  const Wtarget = Math.round(cfg.CELL_W * cfg.TARGET_W_MULT);
-  const width = cfg.MARGIN_PX*2 + cfg.CELL_W*6 + cfg.GAP_X*6 + Wtarget;
-  const height = cfg.MARGIN_PX*2 + cfg.CELL_H;
+    const c = document.createElement('canvas');
+    c.width = width; c.height = height;
+    const ctx = c.getContext('2d');
 
-  const c = document.createElement('canvas');
-  c.width = width; c.height = height;
-  const ctx = c.getContext('2d');
-
-  // ozadje
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,width,height);
-
-  ctx.lineWidth = cfg.STROKE_WIDTH;
-  ctx.strokeStyle = '#000000';
-
-  const font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
-  ctx.font = font;
-  ctx.fillStyle = '#000000';
-  ctx.textBaseline = 'alphabetic';
-
-  // 6 belih celic
-  let x = cfg.MARGIN_PX;
-  const y = cfg.MARGIN_PX;
-  for (const n of numbers) {
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(x, y, cfg.CELL_W, cfg.CELL_H);
-    ctx.strokeRect(x, y, cfg.CELL_W, cfg.CELL_H);
+    ctx.fillRect(0,0,width,height);
 
-    const txt = String(n);
-    const tw = ctx.measureText(txt).width;
-    const tx = x + Math.floor((cfg.CELL_W - tw)/2);
-    const th = cfg.FONT_SIZE;
-    const ty = y + Math.floor((cfg.CELL_H + th)/2) + cfg.TEXT_BASELINE_ADJ;
+    ctx.lineWidth = cfg.STROKE_WIDTH;
+    ctx.strokeStyle = '#000000';
+
+    const font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
+    ctx.font = font;
     ctx.fillStyle = '#000000';
-    ctx.fillText(txt, tx, ty);
-    x += cfg.CELL_W + cfg.GAP_X;
+    ctx.textBaseline = 'alphabetic';
+
+    let x = cfg.MARGIN_PX;
+    const y = cfg.MARGIN_PX;
+    for (const n of numbers) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x, y, cfg.CELL_W, cfg.CELL_H);
+      ctx.strokeRect(x, y, cfg.CELL_W, cfg.CELL_H);
+
+      const txt = String(n);
+      const tw = ctx.measureText(txt).width;
+      const tx = x + Math.floor((cfg.CELL_W - tw)/2);
+      const th = cfg.FONT_SIZE;
+      const ty = y + Math.floor((cfg.CELL_H + th)/2) + cfg.TEXT_BASELINE_ADJ;
+      ctx.fillStyle = '#000000';
+      ctx.fillText(txt, tx, ty);
+      x += cfg.CELL_W + cfg.GAP_X;
+    }
+
+    ctx.fillStyle = '#e6e6e6';
+    ctx.fillRect(x, y, Wtarget, cfg.CELL_H);
+    ctx.strokeStyle = '#000000';
+    ctx.strokeRect(x, y, Wtarget, cfg.CELL_H);
+
+    const tgtTxt = String(target);
+    const ttw = ctx.measureText(tgtTxt).width;
+    const ttx = x + Math.floor((Wtarget - ttw)/2);
+    const tth = cfg.FONT_SIZE;
+    const tty = y + Math.floor((cfg.CELL_H + tth)/2) + cfg.TEXT_BASELINE_ADJ;
+    ctx.fillStyle = '#000000';
+    ctx.fillText(tgtTxt, ttx, tty);
+
+    return c;
   }
 
-  // ciljna (siva) celica 1.5×
-  ctx.fillStyle = '#e6e6e6';
-  ctx.fillRect(x, y, Wtarget, cfg.CELL_H);
-  ctx.strokeStyle = '#000000';
-  ctx.strokeRect(x, y, Wtarget, cfg.CELL_H);
+  function makeSolutionCanvas(expression, target, cfg) {
+    const text = `${expression} = ${target}`;
+    const tmp = document.createElement('canvas');
+    const tctx = tmp.getContext('2d');
+    tctx.font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
+    const textW = Math.ceil(tctx.measureText(text).width);
 
-  const tgtTxt = String(target);
-  const ttw = ctx.measureText(tgtTxt).width;
-  const ttx = x + Math.floor((Wtarget - ttw)/2);
-  const tth = cfg.FONT_SIZE;
-  const tty = y + Math.floor((cfg.CELL_H + tth)/2) + cfg.TEXT_BASELINE_ADJ;
-  ctx.fillStyle = '#000000';
-  ctx.fillText(tgtTxt, ttx, tty);
+    const minW = cfg.MARGIN_PX*2 + cfg.CELL_W*6 + cfg.GAP_X*5;
+    const width = Math.max(minW, textW + cfg.MARGIN_PX*2);
+    const height = cfg.MARGIN_PX*2 + cfg.CELL_H;
 
-  return c;
-}
+    const c = document.createElement('canvas');
+    c.width = width; c.height = height;
+    const ctx = c.getContext('2d');
 
-function makeSolutionCanvas(expression, target, cfg) {
-  const text = `${expression} = ${target}`;
-  const tmp = document.createElement('canvas');
-  const tctx = tmp.getContext('2d');
-  tctx.font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
-  const textW = Math.ceil(tctx.measureText(text).width);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,width,height);
 
-  const minW = cfg.MARGIN_PX*2 + cfg.CELL_W*6 + cfg.GAP_X*5;
-  const width = Math.max(minW, textW + cfg.MARGIN_PX*2);
-  const height = cfg.MARGIN_PX*2 + cfg.CELL_H;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(Math.floor(cfg.MARGIN_PX/2), Math.floor(cfg.MARGIN_PX/2),
+                   width - cfg.MARGIN_PX, height - cfg.MARGIN_PX);
 
-  const c = document.createElement('canvas');
-  c.width = width; c.height = height;
-  const ctx = c.getContext('2d');
+    ctx.font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
+    ctx.fillStyle = '#000000';
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,width,height);
+    const tw = ctx.measureText(text).width;
+    const tx = Math.floor((width - tw)/2);
+    const th = cfg.FONT_SIZE;
+    const ty = cfg.MARGIN_PX + Math.floor((cfg.CELL_H + th)/2) + cfg.TEXT_BASELINE_ADJ;
+    ctx.fillText(text, tx, ty);
 
-  ctx.strokeStyle = '#000000';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(Math.floor(cfg.MARGIN_PX/2), Math.floor(cfg.MARGIN_PX/2),
-                 width - cfg.MARGIN_PX, height - cfg.MARGIN_PX);
+    return c;
+  }
 
-  ctx.font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
-  ctx.fillStyle = '#000000';
+  function canvasToBlob(canvas) {
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  }
 
-  const tw = ctx.measureText(text).width
+  const resultsEl = document.getElementById('results');
+  const logEl = document.getElementById('log');
+  const btnGen = document.getElementById('generate');
+  const btnClear = document.getElementById('clear');
+  const btnZipAll = document.getElementById('zipAll');
+
+  let allFiles = []; // { name, input: Blob }
+
+  function log(line){
+    logEl.textContent += (logEl.textContent.trim()? '\n':'') + line;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  btnClear.addEventListener('click', ()=>{
+    resultsEl.innerHTML = '';
+    logEl.textContent = 'Počiščeno. Pripravljeno za novo generiranje.';
+    allFiles = [];
+    btnZipAll.disabled = true;
+  });
+
+  btnGen.addEventListener('click', async ()=>{
+    const n = Math.max(1, parseInt(document.getElementById('count').value||'1',10));
+    const cfg = getSettings();
+    resultsEl.innerHTML = '';
+    logEl.textContent = 'Začenjam generiranje…';
+    allFiles = [];
+    btnZipAll.disabled = true;
+
+    let made = 0;
+    const widthDigits = String(n).length;
+
+    while (made < n) {
+      try{
+        const {numbers, target, expression} = generateOneValidPuzzle();
+        made++;
+        const idxStr = String(made).padStart(widthDigits,'0');
+
+        const puzzleCanvas = makePuzzleCanvas(numbers, target, cfg);
+        const solutionCanvas = makeSolutionCanvas(expression, target, cfg);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'tile';
+
+        const h = document.createElement('h3');
+        h.textContent = `Naloga ${idxStr}`;
+        wrap.appendChild(h);
+
+        const thumbs = document.createElement('div');
+        thumbs.className = 'thumbs';
+
+        // puzzle
+        const pBlob = await canvasToBlob(puzzleCanvas);
+        const pUrl = URL.createObjectURL(pBlob);
+        const pLink = document.createElement('a');
+        pLink.textContent = `⬇︎ puzzle_${idxStr}.png`;
+        pLink.href = pUrl;
+        pLink.download = `puzzle_${idxStr}.png`;
+        thumbs.appendChild(puzzleCanvas);
+        thumbs.appendChild(pLink);
+
+        // solution
+        const sBlob = await canvasToBlob(solutionCanvas);
+        const sUrl = URL.createObjectURL(sBlob);
+        const sLink = document.createElement('a');
+        sLink.textContent = `⬇︎ solution_${idxStr}.png`;
+        sLink.href = sUrl;
+        sLink.download = `solution_${idxStr}.png`;
+        thumbs.appendChild(solutionCanvas);
+        thumbs.appendChild(sLink);
+
+        wrap.appendChild(thumbs);
+
+        const meta = document.createElement('div');
+        meta.className = 'note';
+        meta.style.marginTop = '6px';
+        meta.textContent = `Številke: [${numbers.join(', ')}]  |  Cilj: ${target}  |  Izraz: ${expression}`;
+        wrap.appendChild(meta);
+
+        resultsEl.appendChild(wrap);
+
+        allFiles.push({ name: `puzzle_${idxStr}.png`, input: pBlob });
+        allFiles.push({ name: `solution_${idxStr}.png`, input: sBlob });
+
+        log(`[${made}/${n}] ✓ ${numbers.join(', ')} → ${target}  (${expression})`);
+        await new Promise(r=>setTimeout(r));
+      } catch(e){
+        // nadaljuj
+      }
+    }
+
+    btnZipAll.disabled = !window.__downloadZip || allFiles.length === 0;
+    if (!window.__downloadZip) {
+      log('Opomba: ZIP knjižnice ni; ZIP gumb ost
