@@ -108,9 +108,10 @@
       </div>
 
       <div class="actions">
-        <input id="count" type="number" min="1" value="6" style="width:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px" />
+        <input id="count" type="number" min="1" value="20" style="width:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px" />
         <button id="generate">Ustvari naloge</button>
         <button id="clear" class="secondary">Počisti rezultate</button>
+        <button id="zipAll" class="secondary" disabled>📦 Prenesi vse kot ZIP</button>
       </div>
 
       <p class="note" style="margin-top:8px">
@@ -120,7 +121,7 @@
 
     <section class="card">
       <h2 style="margin:0 0 10px;font-size:18px">Dnevnik / sporočila</h2>
-      <div id="log" class="log">Pripravljeno. Nastavi količino in klikni »Ustvari naloge«.</div>
+      <div id="log" class="log">Pripravljeno. Klikni »Ustvari naloge« (privzeto 20).</div>
     </section>
   </main>
 
@@ -134,13 +135,15 @@
     </footer>
   </main>
 
-<script>
-/* ========= Logika igre (JS, brskalnik) ========= */
+<!-- Uporabimo majhno knjižnico za ZIP v brskalniku -->
+<script type="module">
+import { downloadZip } from 'https://cdn.jsdelivr.net/npm/client-zip/index.js';
+
+/* ========= Logika igre ========= */
 
 const ALLOWED = [1,2,3,4,5,6,7,8,9,10,25,50,75,100];
 
 function sample6Unique() {
-  // naključno vzame 6 brez ponavljanja
   const pool = [...ALLOWED];
   const out = [];
   for (let i=0;i<6;i++){
@@ -150,9 +153,8 @@ function sample6Unique() {
   return out;
 }
 
-// >>> POPRAVEK: vmesni rezultati morajo ostati pozitivni (≥ 1)
+// vmesni rezultati morajo ostati pozitivni (≥ 1)
 function buildExpressionFromSubset(nums) {
-  // izbere 2–6 števil, jih premeša in mednje vtakne + ali −
   const k = 2 + Math.floor(Math.random() * 5); // 2..6
   const indices = [...nums].map((_, i) => i);
 
@@ -181,13 +183,11 @@ function buildExpressionFromSubset(nums) {
     if (op === '+') {
       total += val;
     } else {
-      // zavrni, če bi vmesni rezultat postal 0 ali negativen
       if (total - val < 1) {
         return { expr: null, total: null, used: null };
       }
       total -= val;
     }
-
     parts.push(op, String(val));
   }
 
@@ -201,9 +201,9 @@ function generateOneValidPuzzle(maxTries = 800) {
     for (let inner = 0; inner < 200; inner++) {
       const { expr, total } = buildExpressionFromSubset(nums);
       if (
-        expr &&                 // mora biti veljaven (brez negativnih vmesnih)
+        expr &&
         total >= 1 && total <= 100 &&
-        !nums.includes(total)   // cilj ne sme biti eno od 6 števil
+        !nums.includes(total)
       ) {
         return { numbers: nums, target: total, expression: expr };
       }
@@ -253,15 +253,14 @@ function makePuzzleCanvas(numbers, target, cfg) {
   let x = cfg.MARGIN_PX;
   const y = cfg.MARGIN_PX;
   for (const n of numbers) {
-    // okvir
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(x, y, cfg.CELL_W, cfg.CELL_H);
     ctx.strokeRect(x, y, cfg.CELL_W, cfg.CELL_H);
-    // besedilo na sredino
+
     const txt = String(n);
     const tw = ctx.measureText(txt).width;
     const tx = x + Math.floor((cfg.CELL_W - tw)/2);
-    const th = cfg.FONT_SIZE; // približek višine
+    const th = cfg.FONT_SIZE;
     const ty = y + Math.floor((cfg.CELL_H + th)/2) + cfg.TEXT_BASELINE_ADJ;
     ctx.fillStyle = '#000000';
     ctx.fillText(txt, tx, ty);
@@ -287,7 +286,6 @@ function makePuzzleCanvas(numbers, target, cfg) {
 
 function makeSolutionCanvas(expression, target, cfg) {
   const text = `${expression} = ${target}`;
-  // začasni canvas za mero
   const tmp = document.createElement('canvas');
   const tctx = tmp.getContext('2d');
   tctx.font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
@@ -312,97 +310,4 @@ function makeSolutionCanvas(expression, target, cfg) {
   ctx.font = `900 ${cfg.FONT_SIZE}px "Arial Black", Arial, sans-serif`;
   ctx.fillStyle = '#000000';
 
-  const tw = ctx.measureText(text).width;
-  const tx = Math.floor((width - tw)/2);
-  const th = cfg.FONT_SIZE;
-  const ty = cfg.MARGIN_PX + Math.floor((cfg.CELL_H + th)/2) + cfg.TEXT_BASELINE_ADJ;
-  ctx.fillText(text, tx, ty);
-
-  return c;
-}
-
-/* ========= UI / generiranje ========= */
-
-const resultsEl = document.getElementById('results');
-const logEl = document.getElementById('log');
-const btnGen = document.getElementById('generate');
-const btnClear = document.getElementById('clear');
-
-function log(line){
-  logEl.textContent += (logEl.textContent.trim()? '\n':'') + line;
-  logEl.scrollTop = logEl.scrollHeight;
-}
-
-btnClear.addEventListener('click', ()=>{
-  resultsEl.innerHTML = '';
-  logEl.textContent = 'Počiščeno. Pripravljeno za novo generiranje.';
-});
-
-btnGen.addEventListener('click', async ()=>{
-  const n = Math.max(1, parseInt(document.getElementById('count').value||'1',10));
-  const cfg = getSettings();
-  resultsEl.innerHTML = '';
-  logEl.textContent = 'Začenjam generiranje…';
-
-  let made = 0; let tries = 0;
-  const widthDigits = String(n).length;
-
-  while (made < n) {
-    tries++;
-    try{
-      const {numbers, target, expression} = generateOneValidPuzzle();
-      made++;
-      const idxStr = String(made).padStart(widthDigits,'0');
-
-      const puzzleCanvas = makePuzzleCanvas(numbers, target, cfg);
-      const solutionCanvas = makeSolutionCanvas(expression, target, cfg);
-
-      const wrap = document.createElement('div');
-      wrap.className = 'tile';
-
-      const h = document.createElement('h3');
-      h.textContent = `Naloga ${idxStr}`;
-      wrap.appendChild(h);
-
-      const thumbs = document.createElement('div');
-      thumbs.className = 'thumbs';
-
-      // puzzle canvas + download
-      const pLink = document.createElement('a');
-      pLink.textContent = `⬇︎ puzzle_${idxStr}.png`;
-      pLink.href = puzzleCanvas.toDataURL('image/png');
-      pLink.download = `puzzle_${idxStr}.png`;
-      thumbs.appendChild(puzzleCanvas);
-      thumbs.appendChild(pLink);
-
-      // solution canvas + download
-      const sLink = document.createElement('a');
-      sLink.textContent = `⬇︎ solution_${idxStr}.png`;
-      sLink.href = solutionCanvas.toDataURL('image/png');
-      sLink.download = `solution_${idxStr}.png`;
-      thumbs.appendChild(solutionCanvas);
-      thumbs.appendChild(sLink);
-
-      wrap.appendChild(thumbs);
-
-      // dodatne info vrstice
-      const meta = document.createElement('div');
-      meta.className = 'note';
-      meta.style.marginTop = '6px';
-      meta.textContent = `Številke: [${numbers.join(', ')}]  |  Cilj: ${target}  |  Izraz: ${expression}`;
-      wrap.appendChild(meta);
-
-      resultsEl.appendChild(wrap);
-
-      log(`[${made}/${n}] ✓ ${numbers.join(', ')} → ${target}  (${expression})`);
-      await new Promise(r=>setTimeout(r)); // UI ostane odziven
-    } catch(e){
-      // redko, a lahko — poskusi znova
-    }
-  }
-
-  log(`\nKončano! Ustvarjenih ${made} nalog z rešitvami.`);
-});
-</script>
-</body>
-</html>
+  const tw = ctx.measureText(text).width
